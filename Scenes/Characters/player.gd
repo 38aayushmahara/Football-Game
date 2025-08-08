@@ -31,6 +31,7 @@ func _physics_process(_delta: float) -> void:
 			animation_player.play("tackle")
 			if Time.get_ticks_msec() - time_start_tackle > DURATION_TACKLE:
 				state = State.MOVING
+# Test line for Git commit output
 
 		flip_sprites()
 		set_heading()
