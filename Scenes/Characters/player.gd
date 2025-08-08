@@ -23,14 +23,10 @@ func _physics_process(_delta: float) -> void:
 	else:
 		if state == State.MOVING:
 			handle_human_movement()
-
 			if velocity.x != 0 and KeyUtils.is_action_just_pressed(control_scheme, KeyUtils.Action.SHOOT):
 				state = State.TACKING
 				time_start_tackle = Time.get_ticks_msec()
-				animation_player.play("tackle")  # Immediately play tackle when state changes
-			else:
 				set_movement_animation()
-
 		elif state == State.TACKING:
 			animation_player.play("tackle")
 			if Time.get_ticks_msec() - time_start_tackle > DURATION_TACKLE:
@@ -38,7 +34,6 @@ func _physics_process(_delta: float) -> void:
 
 		flip_sprites()
 		set_heading()
-
 	move_and_slide()
 
 func handle_human_movement() -> void:
