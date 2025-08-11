@@ -4,42 +4,41 @@ extends CharacterBody2D
 const DURATION_TACKLE := 200
 
 enum Controlscheme { CPU, P1, P2 }
-enum State { MOVING, TACKING }
+enum State { MOVING, TACKLING }
 
 @export var control_scheme: Controlscheme
 @export var speed: float = 200.0
 @onready var animation_player: AnimationPlayer = %AnimationPlayer
 @onready var player_sprite: Sprite2D = %PlayerSprite
 
+var current_state: PlayerState = null
 var heading := Vector2.RIGHT
-var state := State.MOVING
-var time_start_tackle := Time.get_ticks_msec()
+var state_factory := PlayerStateFactory.new()
 
 const KeyUtils = preload("res://utils/key_utils.gd")
 
-func _physics_process(_delta: float) -> void:
-	if control_scheme == Controlscheme.CPU:
-		pass
-	else:
-		if state == State.MOVING:
-			handle_human_movement()
-			if velocity.x != 0 and KeyUtils.is_action_just_pressed(control_scheme, KeyUtils.Action.SHOOT):
-				state = State.TACKING
-				time_start_tackle = Time.get_ticks_msec()
-				set_movement_animation()
-		elif state == State.TACKING:
-			animation_player.play("tackle")
-			if Time.get_ticks_msec() - time_start_tackle > DURATION_TACKLE:
-				state = State.MOVING
-# Test line for Git commit output
+func _ready() -> void:
+	switch_states(State.MOVING)
 
-		flip_sprites()
-		set_heading()
+func _physics_process(delta: float) -> void:
+	# Let the active state update velocity
+	if current_state and current_state.has_method("_physics_process_state"):
+		current_state._physics_process_state(delta)
+
+	# Apply velocity to move player (Godot 4: no args)
 	move_and_slide()
 
-func handle_human_movement() -> void:
-	var direction := KeyUtils.get_input_vector(control_scheme).normalized()
-	velocity = direction * speed
+	# Then handle visuals
+	flip_sprites()
+
+func switch_states(state: State) -> void:
+	if current_state != null:
+		current_state.queue_free()
+	current_state = state_factory.get_fresh_state(state)
+	current_state.setup(self, animation_player)
+	current_state.state_transition_requested.connect(switch_states)
+	current_state.name = "PlayerStateMachine: " + str(state)
+	call_deferred("add_child", current_state)
 
 func set_movement_animation() -> void:
 	if velocity.length() > 0:

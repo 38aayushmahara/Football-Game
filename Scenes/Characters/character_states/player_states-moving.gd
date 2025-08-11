@@ -1,15 +1,24 @@
+extends PlayerState
 class_name PlayerStateMoving
-extends Node
-	
-func physics_process(delta: float) -> void:
-	owner.handle_human_movement()
 
-	if owner.velocity.x != 0 and owner.KeyUtils.is_action_just_pressed(owner.control_scheme, owner.KeyUtils.Action.SHOOT):
-		owner.state = owner.State.TACKING
-		owner.time_start_tackle = Time.get_ticks_msec()
-		owner.animation_player.play("tackle")
+func _physics_process_state(delta: float) -> void:
+	if player.control_scheme == Player.Controlscheme.CPU:
+		handle_cpu_movement()
 	else:
-		owner.set_movement_animation()
+		handle_human_movement()
 
-	owner.flip_sprites()
-	owner.set_heading()
+	player.set_movement_animation()
+	player.set_heading()
+
+func handle_human_movement() -> void:
+	var direction: Vector2 = KeyUtils.get_input_vector(player.control_scheme).normalized()
+	player.velocity = direction * player.speed
+	
+	if player.velocity != Vector2.ZERO and KeyUtils.is_action_just_pressed(
+		player.control_scheme,
+		KeyUtils.Action.SHOOT
+	):
+		state_transition_requested.emit(Player.State.TACKLING)
+
+func handle_cpu_movement() -> void:
+	player.velocity = Vector2.ZERO
